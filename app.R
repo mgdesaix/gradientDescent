@@ -19,49 +19,66 @@ library(RColorBrewer)
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Gradient Descent in R"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            numericInput("beta0",
-                        "Intercept",
-                        value = 0),
-            numericInput("beta1",
-                        "Slope",
-                        value = 0),
-            numericInput("mean",
-                         "Error mean",
-                         value = 0),
-            numericInput("sd",
-                         "Error SD",
-                         value = 1),
-            actionButton("generate", label = "Generate data"),
-            numericInput("rho",
-                         "Learning rate",
-                         value = 0.001),
-            sliderInput("epoch",
-                        "Epochs",
-                        min = 0,
-                        max = 1000,
-                        value = 100,
-                        step = 10),
-            actionButton("run", label = "Run model"),
-            numericInput("epochi",
-                         "Epoch to see prediction",
-                         min = 0,
-                         max = 1000,
-                         value = 100)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("dataPlot"),
-           plotOutput("modelPlot"),
-           plotOutput("evalPlot")
-        )
+    titlePanel("Stochastic Gradient Descent in R"),
+    
+    # tab panels
+    tabsetPanel(
+        tabPanel("Data", fluid = TRUE,
+                 sidebarLayout(
+                     sidebarPanel(
+                         h5("Generate data to be fitted by linear regression using stochastic gradient descent. The intercept and slope specify the parameters for the data generation, with a normally distributed error."),
+                         numericInput("beta0",
+                                      "Intercept",
+                                      value = 0),
+                         numericInput("beta1",
+                                      "Slope",
+                                      value = 1),
+                         numericInput("mean",
+                                      "Error mean",
+                                      value = 0),
+                         numericInput("sd",
+                                      "Error SD",
+                                      value = 5),
+                         actionButton("generate", label = "Generate data") 
+                     ), # close sidebarPanel
+                     mainPanel(
+                         plotOutput("dataPlot")
+                     ) # close mainPanel
+                     )
+                 ), # close Data tab
+        tabPanel("Model", fluid = TRUE,
+                 sidebarLayout(
+                     sidebarPanel(
+                         h5("Specify learning rate and number of epochs for SGD. Once the model is run, the plots will display the RMSE and weights vs epochs. Predictions can be plotted for a chosen epoch from the model."),
+                         numericInput("rho",
+                                      "Learning rate",
+                                      value = 0.001),
+                         sliderInput("epoch",
+                                     "Epochs",
+                                     min = 0,
+                                     max = 500,
+                                     value = 100,
+                                     step = 10),
+                         actionButton("run", label = "Run model"),
+                         h5("Note: Do the following only after running the above."),
+                         numericInput("epochi",
+                                      "Choose epoch to see prediction",
+                                      min = 0,
+                                      max = 500,
+                                      value = 100),
+                         actionButton("run2",
+                                      label = "Plot prediction")
+                     ), # close sidebar Panel
+                     mainPanel(
+                         plotOutput("evalPlot"),
+                         plotOutput("modelPlot")
+                     )
+                 )
+                 
+                 ) # Close Model tab
     )
-)
+
+) # close fluidPage
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -79,13 +96,7 @@ server <- function(input, output, session) {
             y <- input$beta0 + x*input$beta1 + rnorm(100, input$mean, input$sd)
             df.xy <- data.frame("x" = x, "y" = y)
     }) # close df.xy
-    # y <- 50 + x*2 + rnorm(100, 0, 20)
-    # 
-    # df.xy <- data.frame("x" = x, "y" = y)
-    # 
-    # ggplot(data = df.xy, aes(x=x, y=y)) +
-    #     geom_point() +
-    #     theme_bw()
+
     output$dataPlot <- renderPlot({
         ggplot(data = df.xy(), aes(x = x, y = y)) +
             geom_point() +
@@ -122,32 +133,46 @@ server <- function(input, output, session) {
                          names_to = "Parameters",
                          values_to = "Values")
         
-        w.i <- out.mat[input$epochi,c(2,3), drop = FALSE]
-         
-        y.hat.stand <- Xstand %*% t(w.i)
-        y.hat <- y.hat.stand * Ystds + Ymeans
-         
-        y.full.df <- data.frame("Y" = as.numeric(y), "Yhat" = y.hat) %>%
-            add_column("x" = x[,1]) %>%
-            pivot_longer(cols = c("Y", "Yhat"), names_to = "Output", values_to = "y")
+        # w.i <- out.mat[input$epochi,c(2,3), drop = FALSE]
+        #  
+        # y.hat.stand <- Xstand %*% t(w.i)
+        # y.hat <- y.hat.stand * Ystds + Ymeans
+        #  
+        # y.full.df <- data.frame("Y" = as.numeric(y), "Yhat" = y.hat) %>%
+        #     add_column("x" = x[,1]) %>%
+        #     pivot_longer(cols = c("Y", "Yhat"), names_to = "Output", values_to = "y")
         
-        list(out.df, y.full.df)
+        list(out.df, out.mat, y)
     }) # close out.list
     
-    
-    output$modelPlot <- renderPlot({
-        ggplot(data = out.list()[[2]], aes(x = x, y = y, color = Output)) +
-            geom_point() +
-            scale_color_brewer(palette = "Set2") +
-            theme_bw()
-    })
-    
+
     output$evalPlot <- renderPlot({
         ggplot(out.list()[[1]]) +
             geom_point(aes(x = Epoch, y = Values, color = Parameters)) +
             scale_color_brewer(palette = "Dark2") +
             facet_grid(rows = vars(Parameters), scales = "free")
-    })
+    }) # close evalPlot
+    
+    observeEvent(input$run2,{
+        out.mat <- out.list()[[2]]
+        y <- out.list()[[3]]
+        Ymeans <- mean(y)
+        Ystds <- sd(y)
+        w.i <- out.mat[input$epochi,c(2,3), drop = FALSE]
+        y.hat.stand <- Xstand %*% t(w.i)
+        y.hat <- y.hat.stand * Ystds + Ymeans
+        
+        y.full.df <- data.frame("Y" = as.numeric(y), "Yhat" = y.hat) %>%
+            add_column("x" = x[,1]) %>%
+            pivot_longer(cols = c("Y", "Yhat"), names_to = "Output", values_to = "y")
+        
+        output$modelPlot <- renderPlot({
+            ggplot(data = y.full.df, aes(x = x, y = y, color = Output)) +
+                geom_point() +
+                scale_color_brewer(palette = "Set2") +
+                theme_bw()
+        }) # close modelPlot
+    }) # close observeEvent
     
     
 }
