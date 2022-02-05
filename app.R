@@ -20,6 +20,8 @@ ui <- fluidPage(
 
     # Application title
     titlePanel("Stochastic Gradient Descent in R"),
+    uiOutput("url"),
+    br(),
     
     # tab panels
     tabsetPanel(
@@ -82,7 +84,7 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-    
+    url <- a("Code on github", href = "https://github.com/mgdesaix/gradientDescent")
     observe(updateSliderInput(session, "epochi",
                               max = input$epoch,
                               value = input$epoch))
