@@ -26,6 +26,8 @@ ui <- fluidPage(
         tabPanel("Data", fluid = TRUE,
                  sidebarLayout(
                      sidebarPanel(
+                         h4("Step 1: Generate data (this tab)"),
+                         h4("Step 2: Run model and visualize (model tab)"),
                          h5("Generate data to be fitted by linear regression using stochastic gradient descent. The intercept and slope specify the parameters for the data generation, with a normally distributed error."),
                          uiOutput("url"),
                          br(),
