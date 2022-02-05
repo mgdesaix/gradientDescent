@@ -20,8 +20,6 @@ ui <- fluidPage(
 
     # Application title
     titlePanel("Stochastic Gradient Descent in R"),
-    uiOutput("url"),
-    br(),
     
     # tab panels
     tabsetPanel(
@@ -29,6 +27,8 @@ ui <- fluidPage(
                  sidebarLayout(
                      sidebarPanel(
                          h5("Generate data to be fitted by linear regression using stochastic gradient descent. The intercept and slope specify the parameters for the data generation, with a normally distributed error."),
+                         uiOutput("url"),
+                         br(),
                          numericInput("beta0",
                                       "Intercept",
                                       value = 0),
@@ -84,7 +84,10 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-    url <- a("Code on github", href = "https://github.com/mgdesaix/gradientDescent")
+    github <- a("Code on github", href = "https://github.com/mgdesaix/gradientDescent")
+    output$url <- renderUI({
+        tagList(github)
+    })
     observe(updateSliderInput(session, "epochi",
                               max = input$epoch,
                               value = input$epoch))
