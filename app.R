@@ -176,7 +176,7 @@ server <- function(input, output, session) {
         output$modelPlot <- renderPlot({
             ggplot(data = y.full.df, aes(x = x, y = y, color = Output)) +
                 geom_point() +
-                scale_color_brewer(palette = "Set2") +
+                scale_color_brewer(palette = "Set1") +
                 theme_bw()
         }) # close modelPlot
     }) # close observeEvent
